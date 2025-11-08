@@ -29,43 +29,43 @@ A minimal, stateless, RESTful Spring Boot service for managing students, courses
 
 ## Project Structure
 ```
-course-selection-server/
-├── pom.xml                          # Maven configuration with Spring Boot dependencies
-├── README.md                        # This file
+course-allocation-server/
+├── pom.xml                          - Maven configuration with Spring Boot dependencies
+├── README.md                        - This file
 ├── src/
 │   ├── main/
 │   │   ├── java/org/example/
-│   │   │   ├── Main.java            # Spring Boot application entry point
-│   │   │   ├── controller/          # REST controllers
+│   │   │   ├── Main.java            - Spring Boot application entry point
+│   │   │   ├── controller/          - REST controllers
 │   │   │   │   ├── StudentController.java
 │   │   │   │   ├── CourseController.java
 │   │   │   │   └── AllocationController.java
-│   │   │   ├── service/             # Business logic services
+│   │   │   ├── service/             - Business logic services
 │   │   │   │   ├── StudentService.java
 │   │   │   │   ├── CourseService.java
 │   │   │   │   └── AllocationService.java
-│   │   │   ├── repository/          # Data access layer (JPA repositories)
+│   │   │   ├── repository/          - Data access layer (JPA repositories)
 │   │   │   │   ├── StudentRepository.java
 │   │   │   │   ├── CourseRepository.java
 │   │   │   │   └── AllocationRepository.java
-│   │   │   ├── model/               # JPA entities
+│   │   │   ├── model/               - JPA entities
 │   │   │   │   ├── Student.java
 │   │   │   │   ├── Course.java
 │   │   │   │   └── Allocation.java
-│   │   │   ├── dto/                 # Data Transfer Objects
+│   │   │   ├── dto/                 - Data Transfer Objects
 │   │   │   │   ├── StudentDTO.java
 │   │   │   │   ├── CourseDTO.java
 │   │   │   │   └── AllocationRequestDTO.java
-│   │   │   └── exception/           # Custom exceptions and global handler
+│   │   │   └── exception/           - Custom exceptions and global handler
 │   │   │       ├── ResourceNotFoundException.java
 │   │   │       ├── ConflictException.java
 │   │   │       └── GlobalExceptionHandler.java
 │   │   └── resources/
-│   │       └── application.properties  # Spring Boot configuration (H2, JPA)
+│   │       └── application.properties  - Spring Boot configuration (H2, JPA)
 │   └── test/
 │       └── java/org/example/service/
 │           └── AllocationServiceIntegrationTest.java  # Integration tests
-└── target/                          # Build output (generated)
+└── target/                          - Build output (generated)
 ```
 
 ## Prerequisites
@@ -103,29 +103,121 @@ course-selection-server/
 
 3. **Stop the Server**: Press `Ctrl+C` in the terminal.
 
+## Deployment
+
+This project is configured to run inside Docker and is prepared for simple deployment (there is a `render.yaml` included for Render.com deployments). The canonical Maven artifactId is `course-allocation-server` (see `pom.xml`) and the expected JAR produced on build is `target/course-allocation-server-1.0-SNAPSHOT.jar`.
+
+Quick local Docker workflow (PowerShell):
+
+```powershell
+cd 'C:\Users\naeemaziz\Desktop\draka labs\course-allocation-server'
+# Build the application (optional — the Dockerfile also runs the Maven build inside the image)
+mvn clean package -DskipTests
+
+# Build the Docker image
+docker build -t course-allocation-server:latest .
+
+# Run the container and expose port 8080
+docker run --rm -p 8080:8080 course-allocation-server:latest
+
+# Visit: http://localhost:8080
+```
+
+Notes about the Dockerfile and Render deployment:
+- The repository contains a `Dockerfile` that installs Maven inside the image and runs `mvn clean package -DskipTests` during image build, producing the JAR under `target/` inside the image.
+- There is also a `render.yaml` file that instructs Render to run the application using:
+
+```yaml
+web: java -jar target/course-allocation-server-1.0-SNAPSHOT.jar
+```
+
+- If you prefer smaller images, consider using a multi-stage Dockerfile: build in a Maven image, then copy the produced JAR into a slim JRE image. I can provide a patch for that if you'd like.
+- If you see any stale artifacts in the `target/` directory (for example from old builds with a previous artifactId), run `mvn clean` or delete `target/` before building to ensure the generated JAR name matches the current `pom.xml`.
+
+Continuous deployment on Render:
+- Push your repository to a Git remote connected to Render. Render will detect the `render.yaml` and run the command defined there to start the service.
+- Ensure Render's build environment uses Java 17 (this repo targets Java 17). You can configure environment/build settings on Render as needed.
+
+If you want, I can:
+- Add a multi-stage Dockerfile to reduce image size and build time.
+- Add a short CI workflow (GitHub Actions) to build/publish the Docker image to a registry on pushes.
+
 ## API Documentation
 The API is RESTful, stateless, and uses JSON payloads. All endpoints are prefixed with `/api/`.
 
 ### Students
 - **POST** `/api/students` - Create a student.
-  - Body: `{"firstName": "John", "lastName": "Doe", "email": "john.doe@example.com"}`
-  - Response: 201 Created with student details.
+  - Request body (example):
+
+```json
+{
+  "firstName": "John",
+  "lastName": "Doe",
+  "email": "john.doe@example.com"
+}
+```
+
+  - Response (example): 201 Created
+
+```json
+{
+  "id": 1,
+  "firstName": "Michael",
+  "lastName": "Awagah",
+  "email": "michael.awagah@example.com"
+}
+```
 - **GET** `/api/students` - List all students.
 - **GET** `/api/students/{id}` - Get student by ID.
 - **DELETE** `/api/students/{id}` - Delete student by ID (204 No Content).
 
 ### Courses
 - **POST** `/api/courses` - Create a course.
-  - Body: `{"title": "Introduction to Programming", "courseCode": "CS101", "capacity": 30}`
-  - Response: 201 Created with course details.
+  - Request body (example):
+
+```json
+{
+  "title": "Introduction to Programming",
+  "courseCode": "CS101",
+  "capacity": 30
+}
+```
+
+  - Response (example): 201 Created
+
+```json
+{
+  "id": 1,
+  "title": "Introduction to Programming",
+  "courseCode": "CS101",
+  "capacity": 30
+}
+```
 - **GET** `/api/courses` - List all courses.
 - **GET** `/api/courses/{id}` - Get course by ID.
 - **DELETE** `/api/courses/{id}` - Delete course by ID (204 No Content).
 
 ### Allocations
 - **POST** `/api/allocations` - Allocate a student to a course.
-  - Body: `{"studentId": 1, "courseId": 1}`
-  - Response: 201 Created.
+  - Request body (example):
+
+```json
+{
+  "studentId": 1,
+  "courseId": 1
+}
+```
+
+  - Response (example): 201 Created
+
+```json
+{
+  "id": 1,
+  "studentId": 1,
+  "courseId": 1,
+  "allocatedAt": "2025-11-08T12:34:56Z"
+}
+```
 - **DELETE** `/api/allocations/{id}` - Deallocate by allocation ID (204 No Content).
 - **GET** `/api/students/{id}/courses` - List courses for a student.
 - **GET** `/api/courses/{id}/students` - List students for a course.

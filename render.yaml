@@ -1,0 +1,1 @@
+web: java -jar target/course-allocation-server-1.0-SNAPSHOT.jar
